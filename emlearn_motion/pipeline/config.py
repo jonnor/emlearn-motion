@@ -8,22 +8,24 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 class ExtractorType(StrEnum):
     Program = 'program'
-    
+    Timebased = 'timebased'
 
 class PreprocessingConfig(BaseModel):
+    name: str = 'unknown'
     window_length: int = 128
     hop_length: int = 64
     extractor: ExtractorType = 'program'
     #config: ConfigDict
     columns: list[str]
-    program: str = '' # XXX: should be inside a subconfig?
+    program: list[str] = [] # XXX: should be inside a subconfig?
 
 class DatasetConfig(BaseModel):
     name: str = ''
     groups : list[str] = []
-    data_columns: list[str] = []
+    accelerometer_columns: list[str] = []
+    gyro_columns: list[str] = []
     classes : list[str] = []
-    label_column : str = ''
+    label_column : str = 'activity'
     time_column : str = 'time'
     sensitivity : float = 4.0
     samplerate: int = 50

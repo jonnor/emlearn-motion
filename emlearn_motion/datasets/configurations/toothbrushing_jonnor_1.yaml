@@ -6,7 +6,7 @@ dataset:
     samplerate: 50
     label_column: is_brushing
     time_column: time
-    data_columns:
+    accelerometer_columns:
       - x
       - y
       - z
@@ -16,6 +16,7 @@ dataset:
       - 'False'
 
 preprocessing:
+    extractor: 'timebased'
     window_length: 128
     hop_length: 64
     columns: ['acc_x', 'acc_y', 'acc_z']

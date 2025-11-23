@@ -389,8 +389,6 @@ def label_windows(sensordata,
     # default to unknown=NA
     windows[label_column] = None
 
-    print(sensordata.head())
-
     sensor_groups = {idx: df for idx, df in sensordata.groupby(groupby, group_keys=False, as_index=False) }
 
     log.debug('label-windows', groups=groupby, g=list(sensor_groups.keys()))
@@ -474,16 +472,16 @@ def plot_timelines(sensordata, windows, groupby, sensor_columns, label_column):
 
   
 def run_pipeline(run, hyperparameters,
-        config_path,
+        config : Config,
         data_dir,
         out_dir,
-        model_settings=dict(),
+        extractor=None, # custom
+        data_columns=None,
         n_splits=5,
-        features='timebased',
     ):
 
-    config : Config = load_config(config_path)
     dataset_name = config.dataset.name
+    features = config.preprocessing.name
 
     label_column = config.dataset.label_column
     time_column = config.dataset.time_column
@@ -524,12 +522,17 @@ def run_pipeline(run, hyperparameters,
     
     window_duration = (window_length / samplerate)
 
-    remap = {
-        'x': 'acc_x',
-        'y': 'acc_y',
-        'z': 'acc_z',
-    }
-    data = data.rename(columns=remap)
+
+    # Standardize the data column names
+    original_accelerometer = config.dataset.accelerometer_columns
+    standard_accelerometer_columns = ['acc_x', 'acc_y', 'acc_z']
+    acc_mapping = dict(zip(original_accelerometer, standard_accelerometer_columns))
+    data = data.rename(columns=acc_mapping)
+
+    # TODO: also support gyro
+    standard_gyro_columns = ['gyro_x', 'gyro_y', 'gyro_z']
+    for c in standard_gyro_columns:
+        data[c] = 0.0
 
 
     # convert to time-delta, if neeeded
@@ -541,33 +544,33 @@ def run_pipeline(run, hyperparameters,
     data = data.groupby(groups, as_index=False, group_keys=False).apply(convert_time, include_groups=True)
 
 
-    # Setup feature extraction
-    extract_options = dict(
-        window_length=window_length,
-        hop_length=window_hop,
-        samplerate=samplerate,
-    )
-    if features == 'timebased':
-        #columns = ['x', 'y', 'z']
-        data_columns = ['acc_x', 'acc_y', 'acc_z']
-        extractor = TimebasedFeatureExtractor(sensitivity=config.dataset.sensitivity, column_order=data_columns, options=extract_options)
+    if extractor is None:
+        extractor_type = config.preprocessing.extractor
 
-    elif features == 'custom':
-        # FIXME: unhardcode path
-        executable = ['/home/jon/projects/emlearn/examples/motion_recognition/build/motion_preprocess']
+        # Setup feature extraction
+        extract_options = dict(
+            window_length=window_length,
+            hop_length=window_hop,
+            samplerate=samplerate,
+        )
+        if extractor_type == 'timebased':
+            data_columns = standard_accelerometer_columns
+            extractor = TimebasedFeatureExtractor(
+                sensitivity=config.dataset.sensitivity,
+                column_order=data_columns,
+                options=extract_options,
+            )
 
-        columns = ['time', 'acc_x', 'acc_y', 'acc_z', 'gyro_x', 'gyro_y', 'gyro_z']
-        data_columns = [ c for c in columns if not c == 'time' ]
-        extractor = DataProcessorProgram(program=executable,
-            options=extract_options, column_order=columns)
-
-        # Feature extractor expects these to be set
-        data['gyro_x'] = 0.0
-        data['gyro_y'] = 0.0
-        data['gyro_z'] = 0.0
-
-    else:
-        raise ValueError(f"Unsupported features: {features}")
+        elif extractor_type == 'program':
+            executable = config.preprocessing.program
+            columns = config.preprocessing.columns
+            data_columns = [ c for c in columns if not c == 'time' ]
+            extractor = DataProcessorProgram(program=executable,
+                options=extract_options,
+                column_order=columns
+            )
+        else:
+            raise ValueError(f"Unsupported features: {features}")
 
     features = extract_features(data,
         extractor=extractor,
@@ -718,8 +721,10 @@ def main():
         here = os.path.dirname(__file__)
         config_path = os.path.join(here, '../datasets/configurations', config_path)
 
+    config : Config = load_config(config_path)
+
     results = run_pipeline(
-        config_path=config_path,
+        config=config,
         out_dir=args.out_dir,
         data_dir=args.data_dir,
         run=run_id,
