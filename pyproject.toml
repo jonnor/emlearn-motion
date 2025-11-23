@@ -12,7 +12,14 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["emlearn_motion"]
+packages = [
+    "emlearn_motion.datasets",
+    "emlearn_motion.plot",
+    "emlearn_motion.pipeline",
+    "emlearn_motion.features",
+    "emlearn_motion.labeling",
+    "emlearn_motion.utils",
+]
 
 [project.optional-dependencies]
 dev = [
