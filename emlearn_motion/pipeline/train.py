@@ -88,6 +88,8 @@ def evaluate(windows : pandas.DataFrame, groupby : str, hyperparameters : dict,
 
     figures = dict()
 
+    from matplotlib import pyplot as plt
+
     if len(estimator.classes_) == 2:
         # Binary classification, compute precision-recall curves
         fig, ax = plt.subplots(1, figsize=(10, 10))
@@ -231,7 +233,7 @@ class TimebasedFeatureExtractor(DataProcessorProgram):
         super().__init__(self, serialization='npy', **kwargs)
 
         here = os.path.dirname(__file__)
-        feature_extraction_script = os.path.join(here, 'compute_features.py')
+        feature_extraction_script = os.path.join(here, '../features/timebased_process.py')
         self.program = [ python_bin, feature_extraction_script ]
 
         self.sensitivity = sensitivity
@@ -471,7 +473,7 @@ def plot_timelines(sensordata, windows, groupby, sensor_columns, label_column):
         fig.write_image(plot_path, scale=1.5, width=width, height=height)
         print('Wrote plot', plot_path)
 
-def run_pipeline(run, hyperparameters, dataset,
+def run_pipeline(run, hyperparameters,
         config,
         data_dir,
         out_dir,
@@ -481,14 +483,15 @@ def run_pipeline(run, hyperparameters, dataset,
     ):
 
     dataset_config = load_config(config)
+    dataset_name = dataset_config['dataset']
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    data_path = os.path.join(data_dir, f'{dataset}.parquet')
+    data_path = os.path.join(data_dir, f'{dataset_name}.parquet')
 
     data_load_start = time.time()
-    log.info('data-load-start', dataset=dataset)
+    log.info('data-load-start', dataset=dataset_name, config=config)
     data = pandas.read_parquet(data_path)
 
     groups = dataset_config['groups']
@@ -504,11 +507,11 @@ def run_pipeline(run, hyperparameters, dataset,
     data[label_column] = data[label_column].astype(str)
 
     data_load_duration = time.time() - data_load_start
-    log.info('data-load-end', dataset=dataset, samples=len(data), duration=data_load_duration)
+    log.info('data-load-end', dataset=dataset_name, samples=len(data), duration=data_load_duration)
 
     feature_extraction_start = time.time()
     log.info('feature-extraction-start',
-        dataset=dataset,
+        dataset=dataset_name,
         features=features,
     )
     window_length = model_settings['window_length']
@@ -531,7 +534,7 @@ def run_pipeline(run, hyperparameters, dataset,
             data.index = data.index - data.index.min()
         return data
 
-    data = data.groupby(groups, as_index=False, group_keys=False).apply(convert_time)
+    data = data.groupby(groups, as_index=False, group_keys=False).apply(convert_time, include_groups=True)
 
 
     # Setup feature extraction
@@ -542,8 +545,8 @@ def run_pipeline(run, hyperparameters, dataset,
     )
     if features == 'timebased':
         #columns = ['x', 'y', 'z']
-        columns = ['acc_x', 'acc_y', 'acc_z']
-        extractor = TimebasedFeatureExtractor(sensitivity=sensitivity, column_order=columns, options=extract_options)
+        data_columns = ['acc_x', 'acc_y', 'acc_z']
+        extractor = TimebasedFeatureExtractor(sensitivity=sensitivity, column_order=data_columns, options=extract_options)
 
     elif features == 'custom':
         # FIXME: unhardcode path
@@ -582,7 +585,7 @@ def run_pipeline(run, hyperparameters, dataset,
 
     feature_extraction_duration = time.time() - feature_extraction_start
     log.info('feature-extraction-done',
-        dataset=dataset,
+        dataset=dataset_name,
         total_instances=len(features),
         labeled_instances=labeled,
         duration=feature_extraction_duration,
@@ -616,29 +619,29 @@ def run_pipeline(run, hyperparameters, dataset,
     
     # Save eval plots
     for name, fig in figures.items():
-        p = os.path.join(out_dir, f'{dataset}.{name}.png')
+        p = os.path.join(out_dir, f'{dataset_name}.{name}.png')
         fig.savefig(p)
         print('Figure:', p)
 
     # Save a model
-    estimator_path = os.path.join(out_dir, f'{dataset}.estimator.pickle')
+    estimator_path = os.path.join(out_dir, f'{dataset_name}.estimator.pickle')
     with open(estimator_path, 'wb') as f:
         pickle.dump(estimator, file=f)
 
     # Export model with emlearn
-    model_path = os.path.join(out_dir, f'{dataset}.trees.csv')
+    model_path = os.path.join(out_dir, f'{dataset_name}.trees.csv')
     export_model(estimator_path, model_path)
 
     # Save metadata
     classes = estimator.classes_
     class_mapping = dict(zip(classes, range(len(classes))))
-    meta_path = os.path.join(out_dir, f'{dataset}.meta.json')
+    meta_path = os.path.join(out_dir, f'{dataset_name}.meta.json')
     metadata = dict(classes=class_mapping, window_length=window_length)
     with open(meta_path, 'w') as f:
         f.write(json.dumps(metadata))
 
     # Save testdata
-    testdata_path = os.path.join(out_dir, f'{dataset}.testdata.npz')
+    testdata_path = os.path.join(out_dir, f'{dataset_name}.testdata.npz')
     testdata = features.groupby(label_column, as_index=False).sample(n=10)
     # convert to class number/index
     testdata['class'] = testdata[label_column].map(class_mapping)
@@ -649,9 +652,9 @@ def run_pipeline(run, hyperparameters, dataset,
     )
 
     # Save results
-    results['dataset'] = dataset
+    results['dataset'] = dataset_name
     results['run'] = run
-    results_path = os.path.join(out_dir, f'{dataset}.results.parquet')
+    results_path = os.path.join(out_dir, f'{dataset_name}.results.parquet')
     results.to_parquet(results_path)
     print('Results written to', results_path)
 
@@ -675,10 +678,9 @@ def parse():
     import argparse
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('--dataset', type=str, default='uci_har',
-                        help='Which dataset to use')
     parser.add_argument('--config', type=str, default='data/configurations/uci_har.yaml',
                         help='Which dataset/training config to use')
+
     parser.add_argument('--data-dir', metavar='DIRECTORY', type=str, default='./data/processed',
                         help='Where the input data is stored')
     parser.add_argument('--out-dir', metavar='DIRECTORY', type=str, default='./',
@@ -713,8 +715,14 @@ def main():
         #'max_leaf_nodes': max_leaf_nodes,
     }
 
-    results = run_pipeline(dataset=args.dataset,
-        config=args.config,
+    config_path = args.config
+    if not os.path.exists(config_path):
+        # if this is not a path to an (existing) file, assume that it refers inside our package
+        here = os.path.dirname(__file__)
+        config_path = os.path.join(here, '../datasets/configurations', config_path)
+
+    results = run_pipeline(
+        config=config_path,
         out_dir=args.out_dir,
         data_dir=args.data_dir,
         run=run_id,

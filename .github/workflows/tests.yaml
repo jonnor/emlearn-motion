@@ -51,7 +51,7 @@ jobs:
       MIN_SAMPLES_LEAF: 1,8,64
     strategy:
       matrix:
-        dataset: [ 'uci_har', 'pamap2' ]
+        dataset: [ 'uci_har', 'pamap2', 'toothbrushing_jonnor_1' ]
 
     steps:
       - uses: actions/checkout@v4
@@ -79,11 +79,11 @@ jobs:
 
       - name: Download data
         run: |
-          python -m emlearn_motion.datasets.${{ matrix.dataset }}
+          python -m emlearn_motion.datasets.download --dataset ${{ matrix.dataset }}
 
       - name: Run
         run: |
-           python -m emlearn_motion.pipeline.train --dataset ${{ matrix.dataset }}
+           python -m emlearn_motion.pipeline.train --dataset ${{ matrix.dataset }}.yaml
         # TODO: upload results as artifacts
 
 

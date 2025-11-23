@@ -11,7 +11,15 @@ dependencies = [
     "pyyaml",
 ]
 
+[tool.setuptools.package-data]
+emlearn_motion = [
+    "**/*.txt",
+    "**/*.json",
+    "**/*.yaml",
+]
+
 [tool.setuptools]
+include-package-data = true
 packages = [
     "emlearn_motion.datasets",
     "emlearn_motion.plot",

@@ -196,11 +196,7 @@ def parse():
     args = parser.parse_args()
     return args
 
-def main():
-
-    args = parse()
-    dataset_path = args.download
-    packed_path = args.pack
+def download_and_pack(dataset_path, packed_path):
 
     downloaded = download(dataset_path)
     data = load_data(dataset_path)
@@ -208,6 +204,13 @@ def main():
     if not os.path.exists(packed_dir):
         os.makedirs(packed_dir)
     data.to_parquet(packed_path)
+
+def main():
+
+    args = parse()
+    dataset_path = args.download
+    packed_path = args.pack
+    download_and_pack(dataset_path, packed_path)
 
     loaded = load_packed(packed_path)
     print('Raw:\t\t', dataset_path)

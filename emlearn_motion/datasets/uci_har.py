@@ -158,6 +158,15 @@ def load_packed(packed_path):
 
     return loaded
 
+def download_and_pack(dataset_path, packed_path):
+
+    downloaded = download(dataset_path)
+    data = load_data(dataset_path)
+    packed_dir = os.path.dirname(packed_path)
+    if not os.path.exists(packed_dir):
+        os.makedirs(packed_dir)
+    data.to_parquet(packed_path)
+
 def parse():
     import argparse
     parser = argparse.ArgumentParser()
@@ -173,13 +182,7 @@ def main():
     args = parse()
     dataset_path = args.download
     packed_path = args.pack
-
-    downloaded = download(dataset_path)
-    data = load_data(dataset_path)
-    packed_dir = os.path.dirname(packed_path)
-    if not os.path.exists(packed_dir):
-        os.makedirs(packed_dir)
-    data.to_parquet(packed_path)
+    download_and_pack(dataset_path, packed_path)
 
     loaded = load_packed(packed_path)
     print('Raw:\t\t', dataset_path)
