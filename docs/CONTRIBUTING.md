@@ -13,7 +13,7 @@ This is a volunteer-driven hobby project and we welcome contributions.
 
 ## Developing
 
-See [developing.md](https://github.com/emlearn/emlearn-micropython/blob/master/docs/developing.md)
+See [developing.md](https://github.com/emlearn/emlearn-motion/blob/master/docs/developing.md)
 
 ## Guidelines for Pull Requests
 
@@ -60,4 +60,4 @@ We're all here to learn and build something useful together.
 
 ## Questions?
 
-Ask in [discussions](https://github.com/emlearn/emlearn-micropython/discussions).
+Ask in [discussions](https://github.com/emlearn/emlearn-motion/discussions).
