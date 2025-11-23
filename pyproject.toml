@@ -1,0 +1,18 @@
+[project]
+name = "emlearn-motion"
+version = "0.0.1"
+dependencies = [
+    "pandas",
+    "pyarrow",
+    "emlearn>=0.22.0",
+    "scikit-learn",
+    "setuptools",
+    "structlog",
+    "pyyaml",
+]
+
+[tool.setuptools]
+py-modules = ["emlearn_motion"]
+
+[project.optional-dependencies]
+test = ["pytest"]

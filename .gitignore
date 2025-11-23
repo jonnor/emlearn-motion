@@ -1,0 +1,17 @@
+data/
+
+*.pyc
+
+build/
+tmp/
+*.o
+*.mpy
+
+venv/
+
+.ipynb_checkpoints/
+__pycache__/
+.mpy_ld_cache/
+
+*.egg-info/
+
