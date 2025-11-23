@@ -40,7 +40,7 @@ TODO
 
 - toothbrush. Usecase/training pipeline. Consume emlearn-motion as library
 - har_trees in emlearn-micropython. Training pipeline
-- leaf-clustering-random-forests. Dataset download/load/normalize
+- leaf-clustering-random-forests. Use emlearn-motion for download/load/normalize
 
 embeddedml. 
 
@@ -54,10 +54,32 @@ embeddedml.
 - applications/gesture-recognition.md
 - applications/fall-detection.md
 
+## Datasets
+
+#### KU-HAR
+https://data.mendeley.com/datasets/45f952y38r/5
+
+#### AGHAR benchmark
+https://www.nature.com/articles/s41597-024-03951-4
+November 2024
+
+> AGHAR benchmark, a curated collection of datasets for domain adaptation and generalization studies in smartphone-based HAR
+
+> We standardized six datasets in terms of
+> accelerometer units, sampling rate, gravity component, activity labels, user partitioning,
+> and time window size, removing trivial biases while preserving intrinsic differences
+
+Ku-HAR, MotionSense, RealWorld, UCI-HAR, WISDM
+
+Dataset: https://zenodo.org/records/11992126
+https://github.com/H-IAAC/DAGHAR
+
+
 #### Support in emlearn
-Things that are useful also outside of motion usecases.
+Things that would benefit motion, but are useful also outside these usecases.
 
 - .npy support
 - MiniRocket feature extractor
 - Temporal Convolutional Network (TCN)
-- Dynamic Time Warping
+- Dynamic Time Warping, DTW+KNN
+

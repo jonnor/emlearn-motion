@@ -16,7 +16,7 @@ import glob
 import pandas
 import numpy
 
-from ...utils.download import download_unpack_zip
+from ..utils.download import download_unpack_zip
 
 def assert_data_correct(data):
 
@@ -89,9 +89,9 @@ def load_data(path) -> pandas.DataFrame:
         df = pandas.read_table(path, header=None, sep=' ', names=columns)
         df['subject'] = subject
         df['experiment'] = experiment
-        df['time'] = numpy.arange(len(df)) * 1.0/samplerate
 
-        # FIXME: add a time column, based on samplerate
+        # add a time column, based on samplerate
+        df['time'] = numpy.arange(len(df)) * 1.0/samplerate
 
         return df
 
