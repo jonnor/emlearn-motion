@@ -15,4 +15,4 @@ dependencies = [
 py-modules = ["emlearn_motion"]
 
 [project.optional-dependencies]
-test = ["pytest"]
+dev = ["pytest"]

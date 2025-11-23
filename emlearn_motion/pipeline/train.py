@@ -18,7 +18,6 @@ import joblib
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, make_scorer, get_scorer, PrecisionRecallDisplay
 from sklearn.model_selection import GridSearchCV, GroupShuffleSplit
-from matplotlib import pyplot as plt
 
 import emlearn
 from emlearn.preprocessing.quantizer import Quantizer

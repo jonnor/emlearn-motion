@@ -1,0 +1,80 @@
+name: Python package
+
+on: [push, pull_request]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.13']
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yqq libsndfile1 libsndfile1-dev
+      - name: Install Python dependencies
+        run: |
+          pip install -e ".[dev]"
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          #flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          #flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      - name: Test in-tree code with pytest
+        run: |
+          python -m pytest -v tests/
+      - name: Install as pip package
+        run: |
+          pip install ./ -v
+      - name: Test installed package
+        run: |
+          pytest -v test/
+
+  docs:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.13']
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yqq libsndfile1 libsndfile1-dev doxygen
+      - name: Install Python dependencies
+        run: |
+          pip install flake8 pytest
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements.dev.txt ]; then pip install -r requirements.dev.txt; fi
+      - name: Build package
+        run: |
+          python setup.py build
+      - name: Build documentation using Sphinx
+        working-directory: ./docs
+        env:
+          READTHEDOCS: 'True'
+        run: |
+            make html
+
+
