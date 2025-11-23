@@ -19,6 +19,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, make_scorer, get_scorer, PrecisionRecallDisplay
 from sklearn.model_selection import GridSearchCV, GroupShuffleSplit
 
+from .config import load_config, Config
+
 import emlearn
 from emlearn.preprocessing.quantizer import Quantizer
 from sklearn.preprocessing import LabelEncoder
@@ -374,11 +376,7 @@ def export_model(path, out, name='motion'):
         cmodel.save(name=name, format='csv', file=out)
 
 
-def load_config(file_path):
 
-    with open(file_path, 'r') as f:
-        data = yaml.safe_load(f)
-    return data
 
 def label_windows(sensordata,
         windows,
@@ -473,8 +471,10 @@ def plot_timelines(sensordata, windows, groupby, sensor_columns, label_column):
         fig.write_image(plot_path, scale=1.5, width=width, height=height)
         print('Wrote plot', plot_path)
 
+
+  
 def run_pipeline(run, hyperparameters,
-        config,
+        config_path,
         data_dir,
         out_dir,
         model_settings=dict(),
@@ -482,8 +482,13 @@ def run_pipeline(run, hyperparameters,
         features='timebased',
     ):
 
-    dataset_config = load_config(config)
-    dataset_name = dataset_config['dataset']
+    config : Config = load_config(config_path)
+    dataset_name = config.dataset.name
+
+    label_column = config.dataset.label_column
+    time_column = config.dataset.time_column
+    enabled_classes = config.dataset.classes
+
 
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -494,29 +499,28 @@ def run_pipeline(run, hyperparameters,
     log.info('data-load-start', dataset=dataset_name, config=config)
     data = pandas.read_parquet(data_path)
 
-    groups = dataset_config['groups']
-    data_columns = dataset_config['data_columns']
-    enabled_classes = dataset_config['classes']
-    label_column = dataset_config.get('label_column', 'activity')
-    time_column = dataset_config.get('time_column', 'time')
-    sensitivity = dataset_config.get('sensitivity', 4.0)
-
-    print('dd', sorted(data.columns))
-    print('dt', data.dtypes)
+    print('Data summary')
+    print(data.dtypes)
 
     data[label_column] = data[label_column].astype(str)
 
     data_load_duration = time.time() - data_load_start
-    log.info('data-load-end', dataset=dataset_name, samples=len(data), duration=data_load_duration)
+    log.info('data-load-end',
+        dataset=dataset_name,
+        samples=len(data),
+        duration=data_load_duration,
+    )
 
     feature_extraction_start = time.time()
     log.info('feature-extraction-start',
         dataset=dataset_name,
         features=features,
     )
-    window_length = model_settings['window_length']
-    samplerate = dataset_config.get('samplerate', 100)
-    window_hop = model_settings['window_hop']
+
+    window_length = config.preprocessing.window_length
+    window_hop = config.preprocessing.hop_length
+    samplerate = config.dataset.samplerate
+    groups = config.dataset.groups
     
     window_duration = (window_length / samplerate)
 
@@ -546,7 +550,7 @@ def run_pipeline(run, hyperparameters,
     if features == 'timebased':
         #columns = ['x', 'y', 'z']
         data_columns = ['acc_x', 'acc_y', 'acc_z']
-        extractor = TimebasedFeatureExtractor(sensitivity=sensitivity, column_order=data_columns, options=extract_options)
+        extractor = TimebasedFeatureExtractor(sensitivity=config.dataset.sensitivity, column_order=data_columns, options=extract_options)
 
     elif features == 'custom':
         # FIXME: unhardcode path
@@ -561,6 +565,7 @@ def run_pipeline(run, hyperparameters,
         data['gyro_x'] = 0.0
         data['gyro_y'] = 0.0
         data['gyro_z'] = 0.0
+
     else:
         raise ValueError(f"Unsupported features: {features}")
 
@@ -678,20 +683,12 @@ def parse():
     import argparse
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('--config', type=str, default='data/configurations/uci_har.yaml',
+    parser.add_argument('--config', type=str, default='uci_har.yaml',
                         help='Which dataset/training config to use')
-
     parser.add_argument('--data-dir', metavar='DIRECTORY', type=str, default='./data/processed',
                         help='Where the input data is stored')
     parser.add_argument('--out-dir', metavar='DIRECTORY', type=str, default='./',
                         help='Where to store results')
-
-    parser.add_argument('--features', type=str, default='timebased',
-                        help='Which feature-set to use')
-    parser.add_argument('--window-length', type=int, default=128,
-                        help='Length of each window to classify (in samples)')
-    parser.add_argument('--window-hop', type=int, default=64,
-                        help='How far to hop for next window to classify (in samples)')
 
     args = parser.parse_args()
 
@@ -722,17 +719,12 @@ def main():
         config_path = os.path.join(here, '../datasets/configurations', config_path)
 
     results = run_pipeline(
-        config=config_path,
+        config_path=config_path,
         out_dir=args.out_dir,
         data_dir=args.data_dir,
         run=run_id,
         hyperparameters=hyperparameters,
-        model_settings=dict(
-            window_hop=args.window_hop,
-            window_length=args.window_length,
-        ),
         n_splits=int(os.environ.get('FOLDS', '5')),
-        features=args.features,
     )
 
     df = results.rename(columns=lambda c: c.replace('param_', ''))
