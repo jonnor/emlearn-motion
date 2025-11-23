@@ -83,7 +83,7 @@ jobs:
 
       - name: Run
         run: |
-           python -m emlearn_motion.pipeline.train --dataset ${{ matrix.dataset }}.yaml
+           python -m emlearn_motion.pipeline.train --config ${{ matrix.dataset }}.yaml
         # TODO: upload results as artifacts
 
 
