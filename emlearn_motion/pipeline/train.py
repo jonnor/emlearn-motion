@@ -391,7 +391,7 @@ def label_windows(sensordata,
 
     sensor_groups = {idx: df for idx, df in sensordata.groupby(groupby, group_keys=False, as_index=False) }
 
-    log.debug('label-windows', groups=groupby, g=list(sensor_groups.keys()))
+    log.debug('label-windows', groups=groupby, g=list(sensor_groups.keys()), label_column=label_column)
 
     for idx, ww in windows.groupby(groupby):
         data = sensor_groups[idx]
@@ -409,8 +409,9 @@ def label_windows(sensordata,
             labels = data.loc[window_start:window_end, label_column]
             threshold = majority * len(labels)
             counts = labels.value_counts(dropna=True)
-            label = counts.index[0] if counts.iloc[0] > threshold else None
-            windows.loc[idx, label_column] = label
+            if len(counts) and counts.iloc[0] > threshold:
+                label = counts.index[0]
+                windows.loc[idx, label_column] = label
 
     return windows
 
