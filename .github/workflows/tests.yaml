@@ -50,6 +50,8 @@ jobs:
       TREES: 10
       MIN_SAMPLES_LEAF: 1,8,64
     strategy:
+    strategy:
+      fail-fast: false  # allow other jobs to continue if one fails
       matrix:
         dataset: [ 'pamap2', 'toothbrushing_jonnor_1' ]
 
