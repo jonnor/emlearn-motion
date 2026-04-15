@@ -541,8 +541,7 @@ def run_pipeline(run, hyperparameters,
             data.index = data.index - data.index.min()
         return data
 
-    data = data.groupby(groups, as_index=False, group_keys=False).apply(convert_time, include_groups=True)
-
+    data = data.groupby(groups, as_index=False, group_keys=False).apply(convert_time, include_groups=False)
 
     if extractor is None:
         extractor_type = config.preprocessing.extractor
