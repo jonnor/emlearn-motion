@@ -8,8 +8,6 @@ Framework for
 
 ## Scope
 
-emlearn-motion
-
 #### Tasks
 
 Aim to support most tasks that are relevant to do from motion data (accelerometer/gyro/IMU)
