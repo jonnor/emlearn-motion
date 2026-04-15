@@ -1,20 +1,32 @@
-groups:
-  - subject
-data_columns:
-  - hand_acceleration_16g_x
-  - hand_acceleration_16g_y
-  - hand_acceleration_16g_z
-classes:
-  # - transient
-  - walking
-  - ironing
-  - lying
-  - standing
-  - Nordic_walking
-  - sitting
-  - vacuum_cleaning
-  - cycling
-  - ascending_stairs
-  - descending_stairs
-  - running
-  - rope_jumping
+
+dataset:
+    name: 'pamap2'
+    groups:
+      - subject
+    samplerate: 50
+#    label_column: is_brushing
+#    time_column: time
+    accelerometer_columns:
+      - hand_acceleration_16g_x
+      - hand_acceleration_16g_y
+      - hand_acceleration_16g_z
+    classes:
+      # - transient
+      - walking
+      - ironing
+      - lying
+      - standing
+      - Nordic_walking
+      - sitting
+      - vacuum_cleaning
+      - cycling
+      - ascending_stairs
+      - descending_stairs
+      - running
+      - rope_jumping
+
+preprocessing:
+    extractor: 'timebased'
+    window_length: 128
+    hop_length: 64
+    columns: ['acc_x', 'acc_y', 'acc_z']
